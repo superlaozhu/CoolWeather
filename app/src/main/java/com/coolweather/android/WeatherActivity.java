@@ -1,5 +1,6 @@
 package com.coolweather.android;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -20,13 +21,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.coolweather.android.db.County;
 import com.coolweather.android.gson.Forecast;
 import com.coolweather.android.gson.Weather;
 import com.coolweather.android.service.AutoUpdateService;
 import com.coolweather.android.util.HttpUtil;
 import com.coolweather.android.util.Utility;
 
+import org.litepal.crud.DataSupport;
+
 import java.io.IOException;
+import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -41,9 +46,8 @@ public class WeatherActivity extends AppCompatActivity {
     private ScrollView weatherLayout;
 
     private Button navButton;
-
+    private Button shareButton;
     private TextView titleCity;
-
     private TextView titleUpdateTime;
 
     private TextView degreeText;
@@ -65,7 +69,13 @@ public class WeatherActivity extends AppCompatActivity {
     private ImageView bingPicImg;
 
     private String mWeatherId;
-
+    private Button addressButton;
+    private List<County> countyList;
+    private String WeatherId;
+    private String a;
+    private String b;
+    private String c;
+    private String d;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,7 +86,7 @@ public class WeatherActivity extends AppCompatActivity {
             getWindow().setStatusBarColor(Color.TRANSPARENT);
         }
         setContentView(R.layout.activity_weather);
-        // 初始化各控件
+
         bingPicImg = (ImageView) findViewById(R.id.bing_pic_img);
         weatherLayout = (ScrollView) findViewById(R.id.weather_layout);
         titleCity = (TextView) findViewById(R.id.title_city);
@@ -93,8 +103,11 @@ public class WeatherActivity extends AppCompatActivity {
         swipeRefresh.setColorSchemeResources(R.color.colorPrimary);
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         navButton = (Button) findViewById(R.id.nav_button);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String weatherString = prefs.getString("weather", null);
+        shareButton=(Button) findViewById(R.id.share_button);
+        addressButton=(Button)findViewById(R.id.address_button);
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        final String weatherString = prefs.getString("weather", null);
+        final String weatherString1 = prefs.getString("weather", null);
         if (weatherString != null) {
             // 有缓存时直接解析天气数据
             Weather weather = Utility.handleWeatherResponse(weatherString);
@@ -118,6 +131,49 @@ public class WeatherActivity extends AppCompatActivity {
                 drawerLayout.openDrawer(GravityCompat.START);
             }
         });
+        shareButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Weather weather = Utility.handleWeatherResponse(weatherString1);
+                Intent wechatIntent = new Intent(Intent.ACTION_SEND);
+                wechatIntent.setType("text/plain");
+                for (Forecast forecast : weather.forecastList){
+                    a = forecast.date;
+                    b = forecast.more.info;
+                    c = forecast.temperature.max;
+                    d = forecast.temperature.min;
+                }
+                /*wechatIntent.putExtra(Intent.EXTRA_TEXT, "城市名："+ weather.basic.cityName);
+                wechatIntent.putExtra(Intent.EXTRA_TEXT, "更新时间："+ weather.basic.update.updateTime.split("")[1]);
+                wechatIntent.putExtra(Intent.EXTRA_TEXT, "温度："+ weather.now.temperature+"℃");
+                wechatIntent.putExtra(Intent.EXTRA_TEXT, "天气："+ weather.now.more.info);*/
+                wechatIntent.putExtra(Intent.EXTRA_TEXT, "城市名："+ weather.basic.cityName+"   "+"天气："+ weather.now.more.info+"  "+"预报："+a+b+"最高温度："+c+"℃"+
+                        "最低温度:"+d+"℃");
+                /*wechatIntent.putExtra(Intent.EXTRA_TEXT, "天气情况：" + weather.forecastList );
+                wechatIntent.putExtra(Intent.EXTRA_TEXT, "建议：" + weather.suggestion);*/
+                startActivity(wechatIntent);
+
+
+
+            }
+        });
+
+        addressButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                countyList = DataSupport.findAll(County.class);
+                if(countyList.size() >0){
+                    for(County county : countyList){
+                        if(county.getCountyName().equals("长沙")){
+                            WeatherId = county.getWeatherId();
+                        }
+                    }
+                    requestWeather(WeatherId);
+                }
+
+            }
+        });
+
         String bingPic = prefs.getString("bing_pic", null);
         if (bingPic != null) {
             Glide.with(this).load(bingPic).into(bingPicImg);
@@ -214,6 +270,173 @@ public class WeatherActivity extends AppCompatActivity {
             TextView infoText = (TextView) view.findViewById(R.id.info_text);
             TextView maxText = (TextView) view.findViewById(R.id.max_text);
             TextView minText = (TextView) view.findViewById(R.id.min_text);
+            ImageView infoimage=(ImageView) view.findViewById(R.id.info_image);
+            if(forecast.more.info.equals("晴"))
+            {
+                infoimage.setImageResource(R.drawable.sun);
+            }
+
+            //雨有关的天气
+            if(forecast.more.info.equals("阵雨"))
+            {
+                infoimage.setImageResource(R.drawable.zhy);
+            }
+            if(forecast.more.info.equals("雷阵雨 "))
+            {
+                infoimage.setImageResource(R.drawable.lzy);
+            }
+            if(forecast.more.info.equals("小雨"))
+            {
+                infoimage.setImageResource(R.drawable.xy);
+            }
+            if(forecast.more.info.equals("中雨"))
+            {
+                infoimage.setImageResource(R.drawable.zy);
+            }
+            if(forecast.more.info.equals("大雨"))
+            {
+                infoimage.setImageResource(R.drawable.dy);
+            }
+            if(forecast.more.info.equals("暴雨"))
+            {
+                infoimage.setImageResource(R.drawable.by);
+            }
+            if(forecast.more.info.equals("大暴雨"))
+            {
+                infoimage.setImageResource(R.drawable.dby);
+            }
+            if(forecast.more.info.equals("特大暴雨"))
+            {
+                infoimage.setImageResource(R.drawable.tdby);
+            }
+            if(forecast.more.info.equals("小到中雨"))
+            {
+                infoimage.setImageResource(R.drawable.x_to_zyu);
+            }
+            if(forecast.more.info.equals("中到大雨"))
+            {
+                infoimage.setImageResource(R.drawable.z_to_dyu);
+            }
+            if(forecast.more.info.equals("大到暴雨"))
+            {
+                infoimage.setImageResource(R.drawable.d_to_byu);
+            }
+            if(forecast.more.info.equals("暴雨到大暴雨"))
+            {
+                infoimage.setImageResource(R.drawable.b_to_tbyu);
+            }
+            if(forecast.more.info.equals("大暴雨到特大暴雨"))
+            {
+                infoimage.setImageResource(R.drawable.d_to_tdyu);
+            }
+            //雪
+            if(forecast.more.info.equals("阵雪"))
+            {
+                infoimage.setImageResource(R.drawable.zhx);
+            }
+            if(forecast.more.info.equals("小雪"))
+            {
+                infoimage.setImageResource(R.drawable.xx);
+            }
+            if(forecast.more.info.equals("中雪"))
+            {
+                infoimage.setImageResource(R.drawable.zx);
+            }
+            if(forecast.more.info.equals("暴雪"))
+            {
+                infoimage.setImageResource(R.drawable.bx);
+            }
+
+
+            if(forecast.more.info.equals("雾"))
+            {
+                infoimage.setImageResource(R.drawable.wu);
+            }
+            if(forecast.more.info.equals("多云"))
+            {
+                infoimage.setImageResource(R.drawable.clound);
+            }
+            if(forecast.more.info.equals("阴"))
+            {
+                infoimage.setImageResource(R.drawable.y);
+            }
+            if(forecast.more.info.equals("雨夹雪"))
+            {
+                infoimage.setImageResource(R.drawable.y_x);
+            }
+            if(forecast.more.info.equals("小到中雪"))
+            {
+                infoimage.setImageResource(R.drawable.x_to_zx);
+            }
+            if(forecast.more.info.equals("中到大雪"))
+            {
+                infoimage.setImageResource(R.drawable.z_to_dx);
+            }
+            if(forecast.more.info.equals("大到暴雪 "))
+            {
+                infoimage.setImageResource(R.drawable.d_to_bx);
+            }
+
+            if(forecast.more.info.equals("雷阵雨伴有冰雹 "))
+            {
+                infoimage.setImageResource(R.drawable.lzy_bb);
+            }
+            if(forecast.more.info.equals("浮尘"))
+            {
+                infoimage.setImageResource(R.drawable.fz);
+            }
+            if(forecast.more.info.equals("扬沙"))
+            {
+                infoimage.setImageResource(R.drawable.ys);
+            }
+            if(forecast.more.info.equals("沙尘暴"))
+            {
+                infoimage.setImageResource(R.drawable.scb);
+            }
+            if(forecast.more.info.equals("强沙尘暴"))
+            {
+                infoimage.setImageResource(R.drawable.qscb);
+            }
+            if(forecast.more.info.equals("特强沙尘暴"))
+            {
+                infoimage.setImageResource(R.drawable.tqscb);
+            }
+            if(forecast.more.info.equals("冻雨"))
+            {
+                infoimage.setImageResource(R.drawable.dongy);
+            }
+            if(forecast.more.info.equals("轻雾"))
+            {
+                infoimage.setImageResource(R.drawable.qw);
+            }
+            if(forecast.more.info.equals("浓雾"))
+            {
+                infoimage.setImageResource(R.drawable.nw);
+            }
+            if(forecast.more.info.equals("强浓雾"))
+            {
+                infoimage.setImageResource(R.drawable.qnw);
+            }
+            if(forecast.more.info.equals("轻度霾"))
+            {
+                infoimage.setImageResource(R.drawable.qdm);
+            }
+            if(forecast.more.info.equals("轻微霾"))
+            {
+                infoimage.setImageResource(R.drawable.qwm);
+            }
+            if(forecast.more.info.equals("中度霾"))
+            {
+                infoimage.setImageResource(R.drawable.zdm);
+            }
+            if(forecast.more.info.equals("重度霾"))
+            {
+                infoimage.setImageResource(R.drawable.zhdm);
+            }
+            if(forecast.more.info.equals("特强霾"))
+            {
+                infoimage.setImageResource(R.drawable.tqm);
+            }
             dateText.setText(forecast.date);
             infoText.setText(forecast.more.info);
             maxText.setText(forecast.temperature.max);

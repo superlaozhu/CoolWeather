@@ -12,15 +12,29 @@
         android:layout_weight="2"
         android:textColor="#fff"/>
 
-    <TextView
-        android:id="@+id/info_text"
+    <LinearLayout
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
         android:layout_weight="1"
-        android:gravity="center"
-        android:textColor="#fff"/>
-
+        android:layout_gravity="center_vertical"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:id ="@+id/info_image"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:layout_width="0dp"
+            android:layout_margin="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            />
+        <TextView
+            android:id="@+id/info_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textColor="#fff"/>
+    </LinearLayout>
     <TextView
         android:id="@+id/max_text"
         android:layout_width="0dp"
